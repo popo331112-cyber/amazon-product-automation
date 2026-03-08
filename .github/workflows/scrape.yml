@@ -1,35 +1,53 @@
-name: Amazon Product Scraper
-
-on:
-  schedule:
-    - cron: '0 0 * * *' # Runs daily at midnight
-  workflow_dispatch: # Allows manual trigger
-
-jobs:
-  scrape:
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-
-    - name: Install dependencies
-      run: |
-        pip install playwright
-        playwright install chromium
-
-    - name: Run scraper
-      run: python amazon_scraper.py
-
-    - name: Commit and push results
-      run: |
-        git config --global user.name "GitHub Action"
-        git config --global user.email "action@github.com"
-        git add amazon_products.csv
-        git commit -m "Update scraped products" || echo "No changes to commit"
-        git push
+diff --git a/.github/workflows/scrape.yml b/.github/workflows/scrape.yml
+index 000a63b1fc767bbb09fbc72f128bafd7f2f5cf99..cc7e28cdcf0d254dac1eadb571ba6c0ca49b1c6c 100644
+--- a/.github/workflows/scrape.yml
++++ b/.github/workflows/scrape.yml
+@@ -1,35 +1,44 @@
+ name: Amazon Product Scraper
+ 
+ on:
+   schedule:
+     - cron: '0 0 * * *' # Runs daily at midnight
+   workflow_dispatch: # Allows manual trigger
+ 
++permissions:
++  contents: write
++
+ jobs:
+   scrape:
+     runs-on: ubuntu-latest
+ 
+     steps:
+     - name: Checkout repository
+       uses: actions/checkout@v3
+ 
+     - name: Set up Python
+       uses: actions/setup-python@v4
+       with:
+         python-version: '3.11'
+ 
+     - name: Install dependencies
+       run: |
+         pip install playwright
+         playwright install chromium
+ 
+     - name: Run scraper
+       run: python amazon_scraper.py
+ 
+     - name: Commit and push results
+       run: |
+         git config --global user.name "GitHub Action"
+         git config --global user.email "action@github.com"
+-        git add amazon_products.csv
+-        git commit -m "Update scraped products" || echo "No changes to commit"
+-        git push
+\ No newline at end of file
++        git add -A
++
++        if git diff --cached --quiet; then
++          echo "No changes to commit"
++          exit 0
++        fi
++
++        git commit -m "Update scraped products"
++        git push origin "HEAD:${GITHUB_REF#refs/heads/}"

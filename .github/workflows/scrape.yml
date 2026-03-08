@@ -1,0 +1,35 @@
+name: Amazon Product Scraper
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Runs daily at midnight
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        pip install playwright
+        playwright install chromium
+
+    - name: Run scraper
+      run: python amazon_scraper.py
+
+    - name: Commit and push results
+      run: |
+        git config --global user.name "GitHub Action"
+        git config --global user.email "action@github.com"
+        git add amazon_products.csv
+        git commit -m "Update scraped products" || echo "No changes to commit"
+        git push

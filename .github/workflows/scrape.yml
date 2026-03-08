@@ -5,6 +5,9 @@ on:
     - cron: '0 0 * * *' # Runs daily at midnight
   workflow_dispatch: # Allows manual trigger
 
+permissions:
+  contents: write # Required to push changes back to the repository
+
 jobs:
   scrape:
     runs-on: ubuntu-latest
@@ -22,6 +25,7 @@ jobs:
       run: |
         pip install playwright
         playwright install chromium
+        sudo apt-get install -y libgbm-dev # Ensure system dependencies for Playwright
 
     - name: Run scraper
       run: python amazon_scraper.py
@@ -30,6 +34,12 @@ jobs:
       run: |
         git config --global user.name "GitHub Action"
         git config --global user.email "action@github.com"
-        git add amazon_products.csv
-        git commit -m "Update scraped products" || echo "No changes to commit"
-        git push
+        
+        # Check if the file exists before trying to add it
+        if [ -f "amazon_products.csv" ]; then
+          git add amazon_products.csv
+          git commit -m "Update scraped products" || echo "No changes to commit"
+          git push
+        else
+          echo "No products found, CSV file not created."
+        fi
